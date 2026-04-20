@@ -7,9 +7,10 @@ import {
   updateOverlay,
   draw,
   setOverlayVisibility,
-   startTimerDisplay,
-  stopTimerDisplay, 
-  resetTimerDisplay
+  startTimerDisplay,
+  stopTimerDisplay,
+  resetTimerDisplay,
+  showReadyOverlay,
 } from "./ui.js";
 import { getSettings, getBest, saveBest, playSound } from "./main.js";
 
@@ -19,16 +20,27 @@ let rafId = null;
 
 export const getState = () => state;
 
+function stopLoop() {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+}
+
 // ----- Core Game Functions -----
 export function resetGame() {
-  cancelAnimationFrame(rafId);
+  stopLoop();
+
   const settings = getSettings();
   const N = settings.gridSize;
   const startLen = 4;
   const startX = Math.floor(N / 2);
   const startY = Math.floor(N / 2);
   const snake = [];
-  for (let i = 0; i < startLen; i++) snake.push({ x: startX - i, y: startY });
+
+  for (let i = 0; i < startLen; i++) {
+    snake.push({ x: startX - i, y: startY });
+  }
 
   state = {
     status: "ready", // ready | running | paused | over
@@ -46,29 +58,40 @@ export function resetGame() {
     walls: settings.walls,
     applesOnBoard: settings.apples,
     startTime: null,
-  elapsedTime: 0, 
+    elapsedTime: 0,
   };
 
-  while (state.apples.length < state.applesOnBoard) placeApple();
+  while (state.apples.length < state.applesOnBoard) {
+    if (!placeApple()) break;
+  }
+
+  showReadyOverlay();
   resetTimerDisplay();
+  updateHUD();
   draw(0);
-  
 }
 
 export function start() {
-  if (state.status === "running") return;
+  if (!state || state.status === "running") return;
+
+  stopLoop();
   state.status = "running";
-  state.startTime = performance.now(); 
-  state.lastTs = performance.now();
+  state.startTime = performance.now();
+  state.lastTs = state.startTime;
   rafId = requestAnimationFrame(loop);
 }
 
 export function togglePause() {
+  if (!state) return;
+
   if (state.status === "running") {
+    stopLoop();
     state.status = "paused";
-    state.elapsedTime += performance.now() - state.startTime;
+    if (state.startTime !== null) {
+      state.elapsedTime += performance.now() - state.startTime;
+    }
     state.startTime = null;
-    stopTimerDisplay(); 
+    stopTimerDisplay();
     updateOverlay("Paused", "Press Space/P to resume");
     setOverlayVisibility(true);
   } else if (state.status === "paused" || state.status === "ready") {
@@ -79,33 +102,47 @@ export function togglePause() {
 }
 
 function loop(ts) {
-  rafId = requestAnimationFrame(loop);
+  if (!state || state.status !== "running") {
+    rafId = null;
+    return;
+  }
+
   const dt = ts - state.lastTs;
   state.lastTs = ts;
-  if (state.status !== "running") return;
   state.acc += dt;
-  while (state.acc >= state.stepMs) {
+
+  while (state.acc >= state.stepMs && state.status === "running") {
     step();
     state.acc -= state.stepMs;
   }
+
   draw(state.acc / state.stepMs);
+
+  if (state.status === "running") {
+    rafId = requestAnimationFrame(loop);
+  } else {
+    rafId = null;
+  }
 }
 
 function step() {
   state.prevSnake = state.snake.map((p) => ({ ...p }));
+
   if (state.nextDirs.length) {
     const nd = state.nextDirs.shift();
-    if (!isOpposite(nd, state.dir)){
-      
+    if (!isOpposite(nd, state.dir)) {
       state.dir = nd;
-       let directionStr;
-      if (nd.y === -1) directionStr = 'up';
-      else if (nd.y === 1) directionStr = 'down';
-      else if (nd.x === -1) directionStr = 'left';
-      else if (nd.x === 1) directionStr = 'right';
+
+      let directionStr;
+      if (nd.y === -1) directionStr = "up";
+      else if (nd.y === 1) directionStr = "down";
+      else if (nd.x === -1) directionStr = "left";
+      else if (nd.x === 1) directionStr = "right";
+
       playSound(directionStr);
+    }
   }
-}
+
   const head = state.snake[0];
   let nx = head.x + state.dir.x;
   let ny = head.y + state.dir.y;
@@ -117,10 +154,10 @@ function step() {
   } else {
     if (nx < 0) nx = state.grid - 1;
     else if (nx >= state.grid) nx = 0;
+
     if (ny < 0) ny = state.grid - 1;
     else if (ny >= state.grid) ny = 0;
   }
-  const newHead = { x: nx, y: ny };
 
   const willGrow = appleAt(nx, ny);
   for (let i = 0; i < state.snake.length - (willGrow ? 0 : 1); i++) {
@@ -128,11 +165,16 @@ function step() {
     if (s.x === nx && s.y === ny) return gameOver();
   }
 
-  state.snake.unshift(newHead);
+  state.snake.unshift({ x: nx, y: ny });
+
   if (willGrow) {
     removeAppleAt(nx, ny);
     state.score += 1;
-    while (state.apples.length < state.applesOnBoard) placeApple();
+
+    while (state.apples.length < state.applesOnBoard) {
+      if (!placeApple()) break;
+    }
+
     if (state.score > state.best) {
       state.best = state.score;
       saveBest(state.best);
@@ -140,22 +182,28 @@ function step() {
   } else {
     state.snake.pop();
   }
+
   updateHUD();
 }
 
-function gameOver() {
+function gameOver(
+  title = "Game Over",
+  subtitle = `Score: ${state.score} - Best: ${state.best}`
+) {
+  stopLoop();
   state.status = "over";
-  state.elapsedTime += performance.now() - state.startTime;
+
+  if (state.startTime !== null) {
+    state.elapsedTime += performance.now() - state.startTime;
+  }
+
   state.startTime = null;
   stopTimerDisplay();
-  
-  updateOverlay("Game Over", `Score: ${state.score} · Best: ${state.best}`);
+  updateOverlay(title, subtitle);
   setOverlayVisibility(true);
 }
 
 // ----- Input Handling -----
-// js/game.js
-
 export function handleKey(e) {
   const k = e.key;
 
@@ -164,26 +212,20 @@ export function handleKey(e) {
   else if (["ArrowDown", "s", "S"].includes(k)) queueDir(0, 1);
   else if (["ArrowLeft", "a", "A"].includes(k)) queueDir(-1, 0);
   else if (["ArrowRight", "d", "D"].includes(k)) queueDir(1, 0);
-  
+
   // --- Action Input ---
   else if (k === " " || k === "p" || k === "P") {
     togglePause();
-  } 
-  else if (k === "r" || k === "R") {
+  } else if (k === "r" || k === "R") {
     resetGame();
     setOverlayVisibility(true);
-    updateHUD();
-  } 
-  else if (k === "Enter" && state.status !== "running") {
-    // This is the corrected logic block
-    if (state.status === 'over') {
-      // If the game is over, RESET and start
+  } else if (k === "Enter" && state.status !== "running") {
+    if (state.status === "over") {
       resetGame();
       start();
       startTimerDisplay();
       setOverlayVisibility(false);
     } else {
-      // If the game is ready or paused, just start/resume
       togglePause();
     }
   }
@@ -191,11 +233,14 @@ export function handleKey(e) {
 
 function queueDir(x, y) {
   if (state.status !== "running") return;
+
   const nd = { x, y };
   const last = state.nextDirs.length
     ? state.nextDirs[state.nextDirs.length - 1]
     : state.dir;
+
   if (isOpposite(nd, last) || isSame(nd, last)) return;
+
   state.nextDirs.push(nd);
   if (state.nextDirs.length > 2) state.nextDirs.shift();
 }
@@ -207,25 +252,30 @@ const isSame = (a, b) => a.x === b.x && a.y === b.y;
 function randInt(n) {
   return (Math.random() * n) | 0;
 }
+
 function appleAt(x, y) {
   return state.apples.some((a) => a.x === x && a.y === y);
 }
+
 function removeAppleAt(x, y) {
   state.apples = state.apples.filter((a) => !(a.x === x && a.y === y));
 }
+
 function placeApple() {
   const N = state.grid;
   const taken = new Set(state.snake.map((p) => `${p.x},${p.y}`));
+
   for (let tries = 0; tries < 1000; tries++) {
-    const x = randInt(N),
-      y = randInt(N);
+    const x = randInt(N);
+    const y = randInt(N);
     const key = `${x},${y}`;
+
     if (!taken.has(key) && !appleAt(x, y)) {
       state.apples.push({ x, y });
-      return;
+      return true;
     }
   }
-  updateOverlay("You filled the board!", "Press R to play again.");
-  setOverlayVisibility(true);
-  state.status = "over";
+
+  gameOver("You filled the board!", "Press R to play again.");
+  return false;
 }

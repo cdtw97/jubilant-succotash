@@ -26,7 +26,6 @@ const scoreEl = $("#score");
 const bestEl = $("#best");
 const speedLabel = $("#speedLabel");
 const overlay = $("#overlay");
-const playBtn = $("#playBtn");
 const gridSel = $("#grid");
 const speedSel = $("#speed");
 const applesSel = $("#apples");
@@ -34,7 +33,6 @@ const wallsSel = $("#walls");
 const themeSel = $("#theme");
 const applyBtn = $("#applyBtn");
 const snakeStyleSel = $("#snakeStyle");
-const settingsBtn = $("#settingsBtn");
 const settingsPanel = $("#settings-panel");
 const backBtn = $("#backBtn");
 const gameCard = $(".game-card");
@@ -43,10 +41,12 @@ const pauseBtn = document.querySelector("#pauseBtn");
 const settingsTabs = document.querySelectorAll(".tab-btn");
 const settingsContentPanels = document.querySelectorAll(".tab-content");
 const timeEl = $("#time");
+const readyOverlayMarkup = overlay.innerHTML;
 let timerInterval = null;
+
 canvas.focus({ preventScroll: true });
 export const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-// ui.js (run once after DOM ready)
+
 function isTypingTarget(el) {
   return (
     el &&
@@ -56,28 +56,61 @@ function isTypingTarget(el) {
       el.isContentEditable)
   );
 }
-// ----- Event Listeners -----
-export function initEventListeners() {
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      if (
-        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)
-      ) {
-        if (isTypingTarget(e.target)) return; // don’t block forms
-        e.preventDefault(); // stop caret move/scroll
-      }
-    },
-    { passive: false }
+
+function isGameInputTarget(el) {
+  return (
+    isTypingTarget(el) ||
+    (el &&
+      (el.tagName === "BUTTON" ||
+        el.tagName === "A" ||
+        el.tagName === "SUMMARY"))
   );
-  playBtn.addEventListener("click", () => {
+}
+
+function isSettingsOpen() {
+  return !settingsPanel.classList.contains("hidden");
+}
+
+function openSettingsPanel() {
+  settingsPanel.classList.remove("hidden");
+}
+
+function bindReadyOverlayButtons() {
+  document.getElementById("playBtn")?.addEventListener("click", () => {
     initAudio();
     overlay.classList.add("hidden");
     start();
     canvas.focus?.({ preventScroll: true });
-    canvas.focus?.({ preventScroll: true });
-    startTimerDisplay(); // Start the timer UI
+    startTimerDisplay();
   });
+
+  document.getElementById("settingsBtn")?.addEventListener("click", () => {
+    openSettingsPanel();
+  });
+}
+
+export function showReadyOverlay() {
+  overlay.innerHTML = readyOverlayMarkup;
+  bindReadyOverlayButtons();
+}
+
+// ----- Event Listeners -----
+export function initEventListeners() {
+  bindReadyOverlayButtons();
+
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (isSettingsOpen() || isGameInputTarget(e.target)) return;
+      if (
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)
+      ) {
+        e.preventDefault();
+      }
+    },
+    { passive: false }
+  );
+
   ["pointerdown", "touchend", "keydown", "click"].forEach((evt) =>
     window.addEventListener(
       evt,
@@ -88,12 +121,13 @@ export function initEventListeners() {
       { passive: true }
     )
   );
-  // --- Live Volume Control Listeners ---
+
   masterVolumeSlider.addEventListener("input", () => {
     const settings = getSettings();
     settings.masterVolume = parseFloat(masterVolumeSlider.value);
     saveSettings(settings);
   });
+
   pauseBtn?.addEventListener("click", () => {
     const wasRunning = getState().status === "running";
     togglePause();
@@ -114,32 +148,23 @@ export function initEventListeners() {
     const settings = getSettings();
     settings.sfxVolume = parseFloat(sfxVolumeSlider.value);
     saveSettings(settings);
-    // Play a sound for immediate feedback
     playSound("right");
   });
-  // Show settings panel
-  settingsBtn.addEventListener("click", () => {
-    settingsPanel.classList.remove("hidden");
-  });
-  // --- Tab Switching Logic ---
+
   settingsTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      // Get the target tab content ID from the button's data-tab attribute
       const targetId = tab.dataset.tab;
 
-      // Remove 'active' class from all tabs and content panels
       settingsTabs.forEach((t) => t.classList.remove("active"));
       settingsContentPanels.forEach((p) => p.classList.remove("active"));
 
-      // Add 'active' class to the clicked tab and its corresponding content panel
       tab.classList.add("active");
       document.querySelector(`#${targetId}`).classList.add("active");
-      // Update Apply button label per tab
       applyBtn.textContent =
         targetId === "gameplay" ? "Apply & Restart" : "Apply";
     });
   });
-  // Hide settings panel
+
   applyBtn.textContent = "Apply & Restart";
   backBtn.addEventListener("click", () => {
     settingsPanel.classList.add("hidden");
@@ -148,7 +173,7 @@ export function initEventListeners() {
   applyBtn.addEventListener("click", () => {
     const activePanel = document.querySelector(".tab-content.active");
     const activeTab = activePanel ? activePanel.id : "gameplay";
-    let settings = getSettings();
+    const settings = getSettings();
 
     if (activeTab === "gameplay") {
       settings.gridSize = parseInt(gridSel.value, 10);
@@ -168,25 +193,25 @@ export function initEventListeners() {
       applyBoardSize(settings.boardSize);
       updateHUD();
     } else if (activeTab === "sound") {
-      // Volume sliders apply live on input; nothing to do here.
+      // Volume sliders apply live on input.
     }
   });
 
-  window.addEventListener("keydown", handleKey);
+  window.addEventListener("keydown", (e) => {
+    if (isSettingsOpen() || isGameInputTarget(e.target)) return;
+    handleKey(e);
+  });
 
-  // --- NEW Improved Swipe Gesture Logic ---
   let dragState = null;
-  const swipeDeadzone = 20; // A slightly smaller deadzone feels more responsive here
+  const swipeDeadzone = 20;
 
   canvas.addEventListener("pointerdown", (e) => {
     const state = getState();
     if (state.status !== "running") return;
 
-    // Anchor the start of the drag and record the snake's current direction
     dragState = {
       startX: e.clientX,
       startY: e.clientY,
-      // Store the snake's direction when the touch starts
       startDir: state.dir,
     };
   });
@@ -197,24 +222,20 @@ export function initEventListeners() {
     const dx = e.clientX - dragState.startX;
     const dy = e.clientY - dragState.startY;
 
-    // Check if we've moved far enough from our last anchor point
     if (Math.abs(dx) > swipeDeadzone || Math.abs(dy) > swipeDeadzone) {
       let newDirKey;
-      // Determine the primary direction of the drag
       if (Math.abs(dx) > Math.abs(dy)) {
         newDirKey = dx > 0 ? "ArrowRight" : "ArrowLeft";
       } else {
         newDirKey = dy > 0 ? "ArrowDown" : "ArrowUp";
       }
 
-      // Get the last direction command sent
       const state = getState();
       const lastDir =
         state.nextDirs.length > 0
           ? state.nextDirs[state.nextDirs.length - 1]
           : state.dir;
 
-      // Check if this is a new, valid direction
       let isNewDirection = false;
       if (newDirKey === "ArrowUp" && lastDir.y === 0) isNewDirection = true;
       if (newDirKey === "ArrowDown" && lastDir.y === 0) isNewDirection = true;
@@ -222,25 +243,20 @@ export function initEventListeners() {
       if (newDirKey === "ArrowRight" && lastDir.x === 0) isNewDirection = true;
 
       if (isNewDirection) {
-        // Send the new direction to the game
         handleKey({ key: newDirKey });
-
-        // IMPORTANT: Reset the anchor to the current finger position
-        // This allows the next drag to be measured from here.
         dragState.startX = e.clientX;
         dragState.startY = e.clientY;
       }
     }
   });
 
-  canvas.addEventListener("pointerup", (e) => {
-    // Clear the drag state when the finger is lifted
+  canvas.addEventListener("pointerup", () => {
     dragState = null;
   });
 
   window.addEventListener("resize", () => resizeCanvas(true));
 }
-//HIIIII//
+
 // ----- UI Sync -----
 export function syncUiToSettings() {
   const settings = getSettings();
@@ -298,7 +314,7 @@ export function updateOverlay(title, subtitle) {
       overlay.classList.add("hidden");
       start();
       canvas.focus?.({ preventScroll: true });
-      startTimerDisplay(); // ensure timer resumes
+      startTimerDisplay();
     });
 
     $("#overlayRestartBtn")?.addEventListener("click", () => {
@@ -311,7 +327,7 @@ export function updateOverlay(title, subtitle) {
   }
 
   $("#overlaySettingsBtn")?.addEventListener("click", () => {
-    settingsPanel.classList.remove("hidden");
+    openSettingsPanel();
   });
 }
 
@@ -334,18 +350,9 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y, x + w, y, rr);
 }
 
-// ===== Tube sprite renderer (simple + fast) =====
-// Put these at module scope (above drawTubeSnake)
-
-// ---- The one-and-only draw function ----
-// --- Tube snake: analytic renderer (no sprites) ---
-// Draws a continuous variable-width tube made of "capsule" fills between centers.
-// Fixes wrap glitches by drawing toroidal copies when walls are off.
-// ui.js
-function drawTubeSnake(ctx, centers, colors, tubeWidth) {
+function drawTubeSnake(ctx, centers, colors, tubeWidth, wrapBounds = null) {
   if (!centers || centers.length === 0) return;
 
-  // Draw a smooth Catmull–Rom path
   function strokeSmoothPath(
     pts,
     tension = 1.1,
@@ -367,13 +374,12 @@ function drawTubeSnake(ctx, centers, colors, tubeWidth) {
       return;
     }
 
-    // Pad endpoints so the first and last segment get good tangents
     const p = [pts[0], ...pts, pts[pts.length - 1]];
     for (let i = 1; i < p.length - 2; i++) {
-      const p0 = p[i - 1],
-        p1 = p[i],
-        p2 = p[i + 1],
-        p3 = p[i + 2];
+      const p0 = p[i - 1];
+      const p1 = p[i];
+      const p2 = p[i + 1];
+      const p3 = p[i + 2];
       const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension;
       const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension;
       const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension;
@@ -383,63 +389,115 @@ function drawTubeSnake(ctx, centers, colors, tubeWidth) {
     ctx.stroke();
   }
 
-  // Draw the whole body once — this eliminates the “teardrop at each join”
-  const tailToHead = centers.slice().reverse(); // we want tail → head order for the path
-  strokeSmoothPath(tailToHead, 1.2, tubeWidth, colors.body);
+  function drawOneTube(points) {
+    const tailToHead = points.slice().reverse();
+    strokeSmoothPath(tailToHead, 1.2, tubeWidth, colors.body);
 
-  // Tint the head by overdrawing just the last few points (slightly narrower to avoid halo)
-  const headWindow = Math.min(4, tailToHead.length);
-  if (headWindow >= 2) {
-    strokeSmoothPath(
-      tailToHead.slice(-headWindow),
-      1.2,
-      Math.max(2, Math.floor(tubeWidth * 0.9)),
-      colors.head
+    const headWindow = Math.min(4, tailToHead.length);
+    if (headWindow >= 2) {
+      strokeSmoothPath(
+        tailToHead.slice(-headWindow),
+        1.2,
+        Math.max(2, Math.floor(tubeWidth * 0.9)),
+        colors.head
+      );
+    }
+
+    const head = points[0];
+    let dx = 1;
+    let dy = 0;
+
+    if (points.length >= 2) {
+      const vx = head.x - points[1].x;
+      const vy = head.y - points[1].y;
+      const len = Math.hypot(vx, vy) || 1;
+      dx = vx / len;
+      dy = vy / len;
+    }
+
+    const px = -dy;
+    const py = dx;
+    const eyeOffset = Math.max(3, Math.round(tubeWidth * 0.22));
+    const eyeForward = Math.max(2, Math.round(tubeWidth * 0.18));
+    const eyeR = Math.max(2, Math.round(tubeWidth * 0.12));
+
+    ctx.fillStyle = "rgba(0,0,0,.75)";
+    ctx.beginPath();
+    ctx.arc(
+      head.x + px * eyeOffset + dx * eyeForward,
+      head.y + py * eyeOffset + dy * eyeForward,
+      eyeR,
+      0,
+      Math.PI * 2
     );
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(
+      head.x - px * eyeOffset + dx * eyeForward,
+      head.y - py * eyeOffset + dy * eyeForward,
+      eyeR,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
   }
 
-  // Eyes (optional)
-  const head = centers[0];
-  let dx = 1,
-    dy = 0;
-  if (centers.length >= 2) {
-    const vx = head.x - centers[1].x,
-      vy = head.y - centers[1].y;
-    const len = Math.hypot(vx, vy) || 1;
-    dx = vx / len;
-    dy = vy / len;
+  if (!wrapBounds) {
+    drawOneTube(centers);
+    return;
   }
-  const px = -dy,
-    py = dx; // perpendicular
-  const eyeOffset = Math.max(3, Math.round(tubeWidth * 0.22));
-  const eyeForward = Math.max(2, Math.round(tubeWidth * 0.18));
-  const eyeR = Math.max(2, Math.round(tubeWidth * 0.12));
-  ctx.fillStyle = "rgba(0,0,0,.75)";
+
+  const { ox, oy, gridW, gridH } = wrapBounds;
+  const unwrapped = [centers[0]];
+
+  for (let i = 1; i < centers.length; i++) {
+    const prev = unwrapped[i - 1];
+    let x = centers[i].x;
+    let y = centers[i].y;
+
+    while (x - prev.x > gridW * 0.5) x -= gridW;
+    while (x - prev.x < -gridW * 0.5) x += gridW;
+    while (y - prev.y > gridH * 0.5) y -= gridH;
+    while (y - prev.y < -gridH * 0.5) y += gridH;
+
+    unwrapped.push({ x, y });
+  }
+
+  const xs = unwrapped.map((point) => point.x);
+  const ys = unwrapped.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const minShiftX = Math.ceil((ox - maxX) / gridW);
+  const maxShiftX = Math.floor((ox + gridW - minX) / gridW);
+  const minShiftY = Math.ceil((oy - maxY) / gridH);
+  const maxShiftY = Math.floor((oy + gridH - minY) / gridH);
+
+  ctx.save();
   ctx.beginPath();
-  ctx.arc(
-    head.x + px * eyeOffset + dx * eyeForward,
-    head.y + py * eyeOffset + dy * eyeForward,
-    eyeR,
-    0,
-    Math.PI * 2
-  );
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(
-    head.x - px * eyeOffset + dx * eyeForward,
-    head.y - py * eyeOffset + dy * eyeForward,
-    eyeR,
-    0,
-    Math.PI * 2
-  );
-  ctx.fill();
+  ctx.rect(ox, oy, gridW, gridH);
+  ctx.clip();
+
+  for (let sx = minShiftX; sx <= maxShiftX; sx++) {
+    for (let sy = minShiftY; sy <= maxShiftY; sy++) {
+      const shifted = unwrapped.map((point) => ({
+        x: point.x + sx * gridW,
+        y: point.y + sy * gridH,
+      }));
+      drawOneTube(shifted);
+    }
+  }
+
+  ctx.restore();
 }
 
 function applyBoardSize(size) {
   gameCard.setAttribute("data-size", size);
-  // We must call resizeCanvas so it adjusts to the new container size
   resizeCanvas(true);
 }
+
 function updateTimerDisplay() {
   const state = getState();
   if (!state) return;
@@ -450,6 +508,7 @@ function updateTimerDisplay() {
   }
   timeEl.textContent = formatTime(currentTime);
 }
+
 // --- Mobile helpers ---
 function isMobile() {
   return (
@@ -457,16 +516,14 @@ function isMobile() {
   );
 }
 
-// Keep the canvas' internal resolution matched to its CSS size so it stays sharp
 function syncCanvasToCSS() {
   if (!isMobile()) return;
 
-  const cssSize = Math.floor(canvas.clientWidth); // square due to CSS aspect-ratio
+  const cssSize = Math.floor(canvas.clientWidth);
   const dprNow = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-
-  // Set the internal pixel buffer to CSS size * DPR for crisp rendering
   const needW = cssSize * dprNow;
   const needH = cssSize * dprNow;
+
   if (canvas.width !== needW || canvas.height !== needH) {
     canvas.width = needW;
     canvas.height = needH;
@@ -475,15 +532,14 @@ function syncCanvasToCSS() {
   }
 }
 
-// Call once on load and on every resize/orientation change
 window.addEventListener("resize", syncCanvasToCSS);
 window.addEventListener("orientationchange", syncCanvasToCSS);
 document.addEventListener("DOMContentLoaded", syncCanvasToCSS);
 
-// Disable/hide the Board size control on mobile (requires data-desktop-only OR fallback by label)
 function disableDesktopOnlySettings() {
   const desktopOnly = document.querySelectorAll("[data-desktop-only]");
   const on = isMobile();
+
   desktopOnly.forEach((node) => {
     node.style.display = on ? "none" : "";
     node
@@ -491,7 +547,6 @@ function disableDesktopOnlySettings() {
       .forEach((el) => (el.disabled = on));
   });
 
-  // Fallback if attribute wasn't added: try to find a row mentioning "Board size"
   if (on && desktopOnly.length === 0) {
     const rows = Array.from(
       document.querySelectorAll(".setting-row, .form-group")
@@ -505,11 +560,11 @@ function disableDesktopOnlySettings() {
     }
   }
 }
+
 window.addEventListener("resize", disableDesktopOnlySettings);
 document.addEventListener("DOMContentLoaded", disableDesktopOnlySettings);
 
 // --- Mobile D-pad wiring ---
-// Reuse your existing keyboard handler by dispatching real keydown events
 function tapKey(key) {
   const ev = new KeyboardEvent("keydown", { key });
   window.dispatchEvent(ev);
@@ -524,6 +579,7 @@ function bindPad(btn, key) {
     },
     { passive: false }
   );
+
   btn?.addEventListener("click", (e) => {
     e.preventDefault();
     tapKey(key);
@@ -548,19 +604,21 @@ export function startTimerDisplay() {
 export function stopTimerDisplay() {
   clearInterval(timerInterval);
   timerInterval = null;
-  updateTimerDisplay(); // Final update
+  updateTimerDisplay();
 }
 
 export function resetTimerDisplay() {
   stopTimerDisplay();
   timeEl.textContent = "0:00";
 }
+
 function formatTime(ms) {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
+
 export function resizeCanvas(redraw = false) {
   const cssSize = Math.min(
     $(".canvas-wrap").clientWidth,
@@ -584,8 +642,8 @@ export function draw(alpha = 0) {
   const H = canvas.height / dpr;
   const N = state.grid;
   const cell = Math.floor(Math.min(W, H) / N);
-  const gridW = cell * N,
-    gridH = cell * N;
+  const gridW = cell * N;
+  const gridH = cell * N;
   const ox = Math.floor((W - gridW) / 2);
   const oy = Math.floor((H - gridH) / 2);
 
@@ -596,22 +654,24 @@ export function draw(alpha = 0) {
   const colGrid = css.getPropertyValue("--grid").trim();
   const lerp = (a, b, t) => a * (1 - t) + b * t;
 
-  function interpCell(from, to, alpha) {
-    let fx = from.x,
-      fy = from.y,
-      tx = to.x,
-      ty = to.y;
+  function interpCell(from, to, t) {
+    let fx = from.x;
+    let fy = from.y;
+    const tx = to.x;
+    const ty = to.y;
+
     if (!state.walls) {
-      const dx = tx - fx,
-        dy = ty - fy;
+      const dx = tx - fx;
+      const dy = ty - fy;
       if (dx > 1) fx += N;
       else if (dx < -1) fx -= N;
       if (dy > 1) fy += N;
       else if (dy < -1) fy -= N;
     }
+
     return {
-      x: ox + lerp(fx, tx, alpha) * cell + cell / 2,
-      y: oy + lerp(fy, ty, alpha) * cell + cell / 2,
+      x: ox + lerp(fx, tx, t) * cell + cell / 2,
+      y: oy + lerp(fy, ty, t) * cell + cell / 2,
     };
   }
 
@@ -667,8 +727,7 @@ export function draw(alpha = 0) {
       centers,
       { head: colHead, body: colBody },
       tubeWidth,
-      gridW,
-      gridH
+      state.walls ? null : { ox, oy, gridW, gridH }
     );
   } else {
     const pad = Math.max(1, Math.floor(cell * 0.12));
@@ -684,9 +743,9 @@ export function draw(alpha = 0) {
       ctx.fill();
       if (isHead) {
         ctx.fillStyle = "rgba(0,0,0,.7)";
-        const ex = sz * 0.22,
-          ey = sz * 0.22,
-          eR = Math.max(2, Math.floor(sz * 0.08));
+        const ex = sz * 0.22;
+        const ey = sz * 0.22;
+        const eR = Math.max(2, Math.floor(sz * 0.08));
         ctx.beginPath();
         ctx.arc(rx + ex, ry + ey, eR, 0, Math.PI * 2);
         ctx.fill();
@@ -696,5 +755,6 @@ export function draw(alpha = 0) {
       }
     });
   }
+
   ctx.restore();
 }
