@@ -1,5 +1,5 @@
 // Bump this on every deploy
-const CACHE_NAME = "snake-game-v1.17"; //
+const CACHE_NAME = "snake-game-v1.18"; //
 const urlsToCache = [
   "./",
   "./index.html",
