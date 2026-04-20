@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>Snake</title>
+    <link href="css/style.css" rel="stylesheet" />
+    <meta content="#111827" name="theme-color" />
+    <link href="manifest.json" rel="manifest" />
+    <meta content="yes" name="apple-mobile-web-app-capable" />
+    <meta content="black" name="apple-mobile-web-app-status-bar-style" />
+    <meta content="Snake" name="apple-mobile-web-app-title" />
+    <link href="192.png" rel="apple-touch-icon" />
+  </head>
+  <body data-theme="classic">
+    <div class="wrap">
+      <div class="game-card">
+        <div class="hud-2">
+          <h1 class="game-title">Snake Game</h1>
+          <div class="hud-stats">
+            <div class="badge">Score: <span id="score">0</span></div>
+            <div class="badge">Best: <span id="best">0</span></div>
+            <div class="badge" id="hudSpeed">
+              Speed: <span id="speedLabel">8</span>/s
+            </div>
+            <div class="badge">Time: <span id="time">0:00</span></div>
+          </div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas aria-label="Snake game" id="game" role="img"></canvas>
+          <div class="overlay" id="overlay">
+            <div class="title">Snake</div>
+            <div class="subtitle">
+              <p class="desktop-controls">
+                <b>Controls:</b><br />
+                Arrow keys / WASD to move <br />
+                Space / P to pause <br />
+                R to restart.
+              </p>
+              <p class="mobile-controls">
+                <b>Controls:</b> <br />
+                Swipe to move <br />
+                Use on-screen buttons to pause or restart.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 6px">
+              <button class="button" id="playBtn">Play</button>
+              <button class="button secondary" id="settingsBtn">
+                Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mobile-keys" id="mobileControls">
+        <div aria-label="Directional pad" class="mobile-pad">
+          <button aria-label="Up" class="dpad" id="btnUp">▲</button>
+          <button aria-label="Left" class="dpad" id="btnLeft">◀</button>
+          <button aria-label="Down" class="dpad" id="btnDown">▼</button>
+          <button aria-label="Right" class="dpad" id="btnRight">▶</button>
+          <button aria-label="Pause" class="icon-btn" id="pauseBtn">⏸</button>
+        </div>
+      </div>
+      <div class="settings-panel hidden" id="settings-panel">
+        <div class="sidebar">
+          <h2>Settings</h2>
+          <div class="settings-tabs">
+            <button class="tab-btn active" data-tab="gameplay">Gameplay</button>
+            <button class="tab-btn" data-tab="visuals">Visuals</button>
+            <button class="tab-btn" data-tab="sound">Sound</button>
+          </div>
+          <div class="settings-content">
+            <div class="tab-content active" id="gameplay">
+              <div class="control">
+                <label for="grid">Grid size</label>
+                <select id="grid">
+                  <option value="15">15 × 15 (roomy)</option>
+                  <option selected="" value="21">21 × 21 (classic)</option>
+                  <option value="25">25 × 25</option>
+                  <option value="31">31 × 31 (pro)</option>
+                </select>
+              </div>
+              <div class="control">
+                <label for="speed">Speed</label>
+                <select id="speed">
+                  <option value="3">3 / sec</option>
+                  <option value="5">5 / sec</option>
+                  <option selected="" value="8">8 / sec</option>
+                  <option value="10">10 / sec</option>
+                  <option value="12">12 / sec</option>
+                  <option value="15">15 / sec</option>
+                  <option value="20">20 / sec</option>
+                </select>
+              </div>
+              <div class="control">
+                <label for="apples">Apples on board</label>
+                <select id="apples">
+                  <option selected="" value="1">1</option>
+                  <option value="3">3</option>
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                </select>
+              </div>
+              <div class="control">
+                <label for="walls">Walls</label>
+                <select id="walls">
+                  <option value="wrap">Wrap around edges</option>
+                  <option selected="" value="walls">
+                    Solid walls (no wrap)
+                  </option>
+                </select>
+              </div>
+              <p class="hint restart-note">
+                Applying these settings will restart your current game.
+              </p>
+            </div>
+            <div class="tab-content" id="visuals">
+              <div class="control setting-row" data-desktop-only="">
+                <label for="boardSize">Board Size</label>
+                <select id="boardSize">
+                  <option value="small">Small</option>
+                  <option selected="" value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
+              <div class="control">
+                <label for="theme">Theme</label>
+                <select id="theme">
+                  <option selected="" value="classic">Classic</option>
+                  <option value="dark">Dark</option>
+                  <option value="neon">Neon</option>
+                  <option value="retro">Retro</option>
+                </select>
+              </div>
+              <div class="control">
+                <label for="snakeStyle">Snake style</label>
+                <select id="snakeStyle">
+                  <option selected="" value="tube">Full (tube)</option>
+                  <option value="blocks">Blocks (classic)</option>
+                </select>
+              </div>
+            </div>
+            <div class="tab-content" id="sound">
+              <div class="control">
+                <label for="master-volume">Master Volume</label>
+                <input
+                  id="master-volume"
+                  max="1"
+                  min="0"
+                  step="0.05"
+                  type="range"
+                  value="0.4"
+                />
+              </div>
+              <div class="control">
+                <label for="sfx-volume">Snake Movement</label>
+                <input
+                  id="sfx-volume"
+                  max="1"
+                  min="0"
+                  step="0.05"
+                  type="range"
+                  value="1.0"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="settings-footer">
+            <p class="desktop-controls">
+              <b>Controls:</b> Arrow keys / WASD to move · Space/P to pause · R
+              to restart.
+            </p>
+            <p class="mobile-controls">
+              <b>Controls:</b> Swipe to move · Use on-screen buttons to pause or
+              restart.
+            </p>
+          </div>
+          <div class="control">
+            <label> </label>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <button id="backBtn">Back to Game</button>
+              <button id="applyBtn">Apply &amp; Restart</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Update overlay -->
+    <div
+      aria-live="polite"
+      class="update-overlay hidden"
+      id="updateOverlay"
+      role="status"
+    >
+      <div class="update-card">
+        <div aria-hidden="true" class="loader"></div>
+        <div id="updateOverlayText">Update available, fetching update…</div>
+      </div>
+    </div>
+    <script src="js/main.js" type="module"></script>
+  </body>
+</html>
