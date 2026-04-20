@@ -68,6 +68,7 @@ canvas,
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
   min-height: 100vh;
   padding: 18px;
 }
@@ -80,16 +81,21 @@ canvas {
   -webkit-user-select: none;
   caret-color: transparent;
 }
-/* And REPLACE it with these three rules: */
 .game-card {
-  width: 100%;
-  max-width: 700px;
+  width: min(100%, 680px);
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+  flex: 0 1 auto;
 }
 .game-card[data-size="small"] {
-  max-width: 65vmin;
+  width: min(100%, 500px);
+}
+.game-card[data-size="medium"] {
+  width: min(100%, 680px);
 }
 .game-card[data-size="large"] {
-  max-width: 95vmin;
+  width: min(100%, 860px);
 }
 .game-card {
   position: relative;
@@ -112,6 +118,7 @@ canvas {
   width: 100%;
   aspect-ratio: 1/1;
   background: var(--panel);
+  overflow: hidden;
 }
 canvas {
   width: 100%;
@@ -132,6 +139,7 @@ canvas {
   display: flex;
   justify-content: space-between; /* This will separate the title and stats */
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 10px 18px;
   background: rgba(0, 0, 0, 0.15);
@@ -144,10 +152,14 @@ canvas {
   font-weight: 800;
   text-align: center;
   flex-grow: 1; /* Allows the title to take up the middle space */
+  min-width: 180px;
 }
 .hud-stats {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  min-width: 0;
+  justify-content: flex-end;
 }
 
 .hud-2,
@@ -318,6 +330,17 @@ h1 {
   flex-grow: 1; /* Allows buttons to stretch nicely */
   max-width: 80px;
 }
+@media (max-width: 960px) {
+  .hud-2 {
+    justify-content: center;
+  }
+  .game-title {
+    flex-basis: 100%;
+  }
+  .hud-stats {
+    justify-content: center;
+  }
+}
 /* Apply mobile-specific layouts on screens 768px or less */
 @media (max-width: 768px) {
   .wrap {
@@ -431,7 +454,7 @@ h1 {
 /* Mobile-first improvements */
 @media (pointer: coarse), (max-width: 820px) {
   .game-card {
-    width: 100%;
+    width: min(100%, calc(100vw - 24px));
     max-width: none;
     margin: 0;
     border-radius: 18px;

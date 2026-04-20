@@ -35,8 +35,11 @@ const applyBtn = $("#applyBtn");
 const snakeStyleSel = $("#snakeStyle");
 const settingsPanel = $("#settings-panel");
 const backBtn = $("#backBtn");
+const wrapEl = $(".wrap");
 const gameCard = $(".game-card");
+const hud = $(".hud-2");
 const boardSizeSel = $("#boardSize");
+const mobileControls = $("#mobileControls");
 const pauseBtn = document.querySelector("#pauseBtn");
 const settingsTabs = document.querySelectorAll(".tab-btn");
 const settingsContentPanels = document.querySelectorAll(".tab-content");
@@ -45,7 +48,7 @@ const readyOverlayMarkup = overlay.innerHTML;
 let timerInterval = null;
 
 canvas.focus({ preventScroll: true });
-export const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+export let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 
 function isTypingTarget(el) {
   return (
@@ -73,6 +76,52 @@ function isSettingsOpen() {
 
 function openSettingsPanel() {
   settingsPanel.classList.remove("hidden");
+}
+
+const BOARD_SIZE_PRESETS = {
+  small: { factor: 0.68, max: 500 },
+  medium: { factor: 0.82, max: 680 },
+  large: { factor: 0.96, max: 860 },
+};
+
+function getBoardWidthForViewport(size) {
+  const preset = BOARD_SIZE_PRESETS[size] || BOARD_SIZE_PRESETS.medium;
+  const wrapStyles = wrapEl ? getComputedStyle(wrapEl) : null;
+  const horizontalPadding = wrapStyles
+    ? (parseFloat(wrapStyles.paddingLeft) || 0) +
+      (parseFloat(wrapStyles.paddingRight) || 0)
+    : 0;
+  const availableWidth = Math.max(
+    240,
+    (wrapEl?.clientWidth || window.innerWidth) - horizontalPadding
+  );
+  const hudHeight = hud?.offsetHeight || 0;
+  const controlsHeight =
+    isMobile() && mobileControls ? mobileControls.offsetHeight + 20 : 0;
+  const verticalSafety = isMobile() ? 32 : 48;
+  const availableHeight = Math.max(
+    240,
+    window.innerHeight - hudHeight - controlsHeight - verticalSafety
+  );
+
+  if (isMobile()) {
+    return Math.floor(Math.min(availableWidth, availableHeight));
+  }
+
+  const viewportTarget = Math.min(
+    preset.max,
+    Math.round(Math.min(window.innerWidth, availableHeight) * preset.factor)
+  );
+  const minWidth = Math.min(320, availableWidth, availableHeight);
+  return Math.max(
+    minWidth,
+    Math.floor(Math.min(availableWidth, availableHeight, viewportTarget))
+  );
+}
+
+function refreshBoardLayout(redraw = true) {
+  const settings = getSettings();
+  applyBoardSize(settings.boardSize || "medium", redraw);
 }
 
 function bindReadyOverlayButtons() {
@@ -254,7 +303,8 @@ export function initEventListeners() {
     dragState = null;
   });
 
-  window.addEventListener("resize", () => resizeCanvas(true));
+  window.addEventListener("resize", () => refreshBoardLayout(true));
+  window.addEventListener("orientationchange", () => refreshBoardLayout(true));
 }
 
 // ----- UI Sync -----
@@ -493,9 +543,14 @@ function drawTubeSnake(ctx, centers, colors, tubeWidth, wrapBounds = null) {
   ctx.restore();
 }
 
-function applyBoardSize(size) {
-  gameCard.setAttribute("data-size", size);
-  resizeCanvas(true);
+function applyBoardSize(size, redraw = true) {
+  const effectiveSize = isMobile() ? "large" : size;
+  const boardWidth = getBoardWidthForViewport(effectiveSize);
+
+  gameCard.setAttribute("data-size", effectiveSize);
+  gameCard.style.width = `${boardWidth}px`;
+  gameCard.style.maxWidth = "100%";
+  resizeCanvas(redraw);
 }
 
 function updateTimerDisplay() {
@@ -515,26 +570,6 @@ function isMobile() {
     window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 820
   );
 }
-
-function syncCanvasToCSS() {
-  if (!isMobile()) return;
-
-  const cssSize = Math.floor(canvas.clientWidth);
-  const dprNow = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-  const needW = cssSize * dprNow;
-  const needH = cssSize * dprNow;
-
-  if (canvas.width !== needW || canvas.height !== needH) {
-    canvas.width = needW;
-    canvas.height = needH;
-    ctx.setTransform(dprNow, 0, 0, dprNow, 0, 0);
-    draw(0);
-  }
-}
-
-window.addEventListener("resize", syncCanvasToCSS);
-window.addEventListener("orientationchange", syncCanvasToCSS);
-document.addEventListener("DOMContentLoaded", syncCanvasToCSS);
 
 function disableDesktopOnlySettings() {
   const desktopOnly = document.querySelectorAll("[data-desktop-only]");
@@ -620,13 +655,11 @@ function formatTime(ms) {
 }
 
 export function resizeCanvas(redraw = false) {
-  const cssSize = Math.min(
-    $(".canvas-wrap").clientWidth,
-    window.innerHeight - 120
-  );
-  const size = Math.max(280, Math.min(cssSize, 900));
-  canvas.style.width = size + "px";
-  canvas.style.height = size + "px";
+  const wrapRect = canvas.parentElement?.getBoundingClientRect();
+  if (!wrapRect) return;
+
+  const size = Math.max(1, Math.floor(Math.min(wrapRect.width, wrapRect.height)));
+  dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
   canvas.width = Math.round(size * dpr);
   canvas.height = Math.round(size * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
