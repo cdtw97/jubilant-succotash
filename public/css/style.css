@@ -1,0 +1,47 @@
+html {
+    box-sizing: border-box;
+    font-family: "Segoe UI", sans-serif;
+    line-height: 1.5;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: inherit;
+}
+
+body {
+    margin: 0;
+    background: #f5f7fb;
+    color: #172033;
+}
+
+.site-header {
+    background: #172033;
+    padding: 1rem 1.5rem;
+}
+
+.site-nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.site-nav a {
+    color: #f5f7fb;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.site-nav a:hover,
+.site-nav a:focus {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 720px;
+    margin: 3rem auto;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(23, 32, 51, 0.08);
+}

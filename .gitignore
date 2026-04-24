@@ -1,0 +1,10 @@
+/vendor/
+/composer.phar
+/.phpunit.cache/
+/.env
+/storage/logs/*.log
+/storage/framework/nonces/*.json
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+!/storage/framework/nonces/.gitignore
+!/storage/logs/.gitignore

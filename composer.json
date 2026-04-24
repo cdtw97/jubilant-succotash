@@ -1,0 +1,40 @@
+{
+    "name": "myfrancis/base-core",
+    "description": "A lightweight, secure PHP 8.3+ MVC base core for MyFrancis applications.",
+    "type": "project",
+    "require": {
+        "php": "^8.3",
+        "ext-json": "*",
+        "ext-pdo": "*"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "MyFrancis\\Core\\": "src/Core/",
+            "MyFrancis\\Config\\": "src/Config/",
+            "MyFrancis\\Database\\": "src/Database/",
+            "MyFrancis\\Security\\": "src/Security/",
+            "MyFrancis\\Http\\": "src/Http/",
+            "MyFrancis\\Support\\": "src/Support/",
+            "App\\": "app/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "@php vendor/bin/phpunit --colors=always",
+        "analyse": "@php vendor/bin/phpstan analyse --configuration=phpstan.neon.dist",
+        "lint": "@php tools/lint.php"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteRule "(^|/)\.(?!well-known/)" - [F,L]
+  RewriteRule "^(app|src|resources|routes|storage|tests|tools|vendor)(/|$)" - [F,L]
+  RewriteRule "^composer\.(json|lock|phar)$" - [F,L]
+  RewriteRule "^phpunit\.xml$" - [F,L]
+  RewriteRule "^phpstan\.neon(\.dist)?$" - [F,L]
+  RewriteRule "^\.env(\..*)?$" - [F,L]
+
+  RewriteRule ^$ public/ [L]
+  RewriteRule (.*) public/$1 [L]
+</IfModule>
