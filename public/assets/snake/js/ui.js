@@ -49,6 +49,7 @@ const fullscreenIconPath = $("#fullscreenIconPath");
 const settingsTabs = document.querySelectorAll(".tab-btn");
 const settingsContentPanels = document.querySelectorAll(".tab-content");
 const timeEl = $("#time");
+const runStatusEl = $("#runStatus");
 const readyOverlayMarkup = overlay.innerHTML;
 let timerInterval = null;
 
@@ -455,6 +456,21 @@ export function updateHUD() {
   speedLabel.textContent = settings.speed;
 }
 
+export function setRunStatus(message, tone = "live") {
+  if (!runStatusEl) return;
+
+  runStatusEl.textContent = message;
+  runStatusEl.className = `run-status run-status--${tone}`;
+}
+
+export function resetRunStatus() {
+  if (!runStatusEl) return;
+
+  const defaultMessage = runStatusEl.dataset.defaultMessage || "";
+  const defaultTone = runStatusEl.dataset.defaultTone || "live";
+  setRunStatus(defaultMessage, defaultTone);
+}
+
 export function updateOverlay(title, subtitle) {
   const state = getState();
   if (!state) return;
@@ -529,7 +545,9 @@ const THEME_PROFILES = {
     bodyColor: "#00d9ff",
     headColor: "#ff3dc8",
     gridColor: "rgba(69, 111, 255, 0.18)",
-    boardGradient: ["#12031b", "#06070f"],
+    boardGradient: ["#050914", "#091326"],
+    boardPattern: "grid-box",
+    boardPatternTint: "rgba(0, 255, 255, 0.035)",
     foodPrimary: "#ffd84a",
     foodSecondary: "#fffbd1",
     foodOutline: "#351049",
@@ -539,14 +557,16 @@ const THEME_PROFILES = {
     shadowBlur: 18,
     shadowOffsetY: 0,
     blockRadius: "rounded",
-    boardEffect: "perspective-grid",
-    squareGrid: false,
+    boardOverlayEffect: null,
+    squareGrid: true,
   },
   "e-ink": {
     bodyColor: "#5e6059",
     headColor: "#111111",
     gridColor: "rgba(65, 70, 69, 0.08)",
     boardGradient: ["#ebe4d6", "#ddd7ca"],
+    boardPattern: "grid-box",
+    boardPatternTint: "rgba(79, 77, 70, 0.055)",
     foodPrimary: "#1f5b31",
     foodSecondary: "#1f5b31",
     foodMode: "x-mark",
@@ -555,7 +575,7 @@ const THEME_PROFILES = {
     shadowBlur: 0,
     shadowOffsetY: 0,
     blockRadius: "square",
-    boardEffect: "paper-noise",
+    boardOverlayEffect: "paper-noise",
     squareGrid: true,
     forceBlockStyle: true,
   },
@@ -564,6 +584,8 @@ const THEME_PROFILES = {
     headColor: "#1e2c0f",
     gridColor: "rgba(46, 71, 24, 0.12)",
     boardGradient: ["#9bbc0f", "#8bac0f"],
+    boardPattern: "grid-box",
+    boardPatternTint: "rgba(44, 66, 22, 0.08)",
     foodPrimary: "#0c1a06",
     foodSecondary: "#0c1a06",
     foodMode: "pixel-seed",
@@ -572,7 +594,7 @@ const THEME_PROFILES = {
     shadowBlur: 0,
     shadowOffsetY: 2,
     blockRadius: "soft",
-    boardEffect: "lcd",
+    boardOverlayEffect: "lcd",
     squareGrid: true,
   },
   "living-forest": {
@@ -581,6 +603,8 @@ const THEME_PROFILES = {
     headColor: "#d06737",
     gridColor: "rgba(145, 169, 111, 0.12)",
     boardGradient: ["#f7f2e5", "#efe3cc"],
+    boardPattern: "grid-box",
+    boardPatternTint: "rgba(118, 151, 98, 0.085)",
     foodPrimary: "#b82542",
     foodSecondary: "#ff8c9d",
     foodOutline: "#fff3ee",
@@ -590,14 +614,16 @@ const THEME_PROFILES = {
     shadowBlur: 12,
     shadowOffsetY: 1,
     blockRadius: "pebble",
-    boardEffect: "organic",
-    squareGrid: false,
+    boardOverlayEffect: "organic",
+    squareGrid: true,
   },
   "terminal": {
     bodyColor: "#00c830",
     headColor: "#dfffe5",
     gridColor: "rgba(0, 255, 65, 0.09)",
     boardGradient: ["#010201", "#020602"],
+    boardPattern: "grid-box",
+    boardPatternTint: "rgba(0, 255, 65, 0.045)",
     foodPrimary: "#ffffff",
     foodSecondary: "#ffffff",
     foodMode: "glyph",
@@ -607,7 +633,7 @@ const THEME_PROFILES = {
     shadowBlur: 10,
     shadowOffsetY: 0,
     blockRadius: "soft",
-    boardEffect: "scanlines",
+    boardOverlayEffect: "scanlines",
     squareGrid: true,
   },
 };
@@ -617,7 +643,22 @@ function getThemeProfile(themeName) {
   return THEME_PROFILES[normalized] || THEME_PROFILES["living-forest"];
 }
 
+function getBoardPattern(theme) {
+  return theme.boardPattern || theme.boardEffect || null;
+}
+
+function getBoardOverlayEffect(theme) {
+  if (theme.boardOverlayEffect !== undefined) {
+    return theme.boardOverlayEffect;
+  }
+
+  const effect = theme.boardEffect || null;
+  return effect === "grid-box" ? null : effect;
+}
+
 function drawBoardBackground(ctx, theme, ox, oy, gridW, gridH, cell, time) {
+  const boardPattern = getBoardPattern(theme);
+  const boardOverlayEffect = getBoardOverlayEffect(theme);
   const gradient = ctx.createLinearGradient(ox, oy, ox, oy + gridH);
   gradient.addColorStop(0, theme.boardGradient[0]);
   gradient.addColorStop(1, theme.boardGradient[1]);
@@ -629,7 +670,15 @@ function drawBoardBackground(ctx, theme, ox, oy, gridW, gridH, cell, time) {
   ctx.rect(ox, oy, gridW, gridH);
   ctx.clip();
 
-  if (theme.boardEffect === "perspective-grid") {
+  if (boardPattern === "grid-box") {
+    ctx.fillStyle = theme.boardPatternTint || "rgba(255, 255, 255, 0.04)";
+    for (let row = 0; row < Math.ceil(gridH / cell); row++) {
+      for (let column = 0; column < Math.ceil(gridW / cell); column++) {
+        if ((row + column) % 2 !== 0) continue;
+        ctx.fillRect(ox + column * cell, oy + row * cell, cell, cell);
+      }
+    }
+  } else if (boardPattern === "perspective-grid") {
     const horizonY = oy + gridH * 0.2;
     const scroll = (time * 0.08) % (cell * 1.15);
 
@@ -650,7 +699,9 @@ function drawBoardBackground(ctx, theme, ox, oy, gridW, gridH, cell, time) {
       ctx.lineTo(ox + gridW * 0.5 + halfWidth, y);
       ctx.stroke();
     }
-  } else if (theme.boardEffect === "paper-noise") {
+  }
+
+  if (boardOverlayEffect === "paper-noise") {
     ctx.fillStyle = "rgba(89, 84, 74, 0.06)";
     const count = Math.max(60, Math.floor((gridW * gridH) / 1500));
     for (let i = 0; i < count; i++) {
@@ -658,12 +709,12 @@ function drawBoardBackground(ctx, theme, ox, oy, gridW, gridH, cell, time) {
       const py = oy + (Math.cos(i * 57.31) * 0.5 + 0.5) * gridH;
       ctx.fillRect(px, py, 1, 1);
     }
-  } else if (theme.boardEffect === "lcd") {
+  } else if (boardOverlayEffect === "lcd") {
     ctx.fillStyle = "rgba(40, 58, 18, 0.045)";
     for (let y = oy; y <= oy + gridH; y += 3) {
       ctx.fillRect(ox, y, gridW, 1);
     }
-  } else if (theme.boardEffect === "organic") {
+  } else if (boardOverlayEffect === "organic") {
     const glow = ctx.createRadialGradient(
       ox + gridW * 0.25,
       oy + gridH * 0.2,
@@ -676,7 +727,7 @@ function drawBoardBackground(ctx, theme, ox, oy, gridW, gridH, cell, time) {
     glow.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = glow;
     ctx.fillRect(ox, oy, gridW, gridH);
-  } else if (theme.boardEffect === "scanlines") {
+  } else if (boardOverlayEffect === "scanlines") {
     ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
     for (let y = oy; y <= oy + gridH; y += 4) {
       ctx.fillRect(ox, y, gridW, 1);
@@ -687,7 +738,7 @@ function drawBoardBackground(ctx, theme, ox, oy, gridW, gridH, cell, time) {
 }
 
 function drawThemeOverlay(ctx, theme, ox, oy, gridW, gridH) {
-  if (theme.boardEffect !== "scanlines") {
+  if (getBoardOverlayEffect(theme) !== "scanlines") {
     return;
   }
 

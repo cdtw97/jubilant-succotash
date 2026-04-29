@@ -7,6 +7,8 @@ import {
   updateOverlay,
   draw,
   setOverlayVisibility,
+  setRunStatus,
+  resetRunStatus,
   startTimerDisplay,
   stopTimerDisplay,
   resetTimerDisplay,
@@ -17,7 +19,7 @@ import {
   getBest,
   setBest,
   playSound,
-  submitHighScore,
+  submitGameRun,
 } from "./main.js";
 
 // ----- State Management -----
@@ -73,6 +75,7 @@ export function resetGame() {
     if (!placeApple()) break;
   }
 
+  resetRunStatus();
   showReadyOverlay();
   resetTimerDisplay();
   updateHUD();
@@ -214,36 +217,87 @@ function gameOver(
 
   if (!state.scoreSubmitted) {
     state.scoreSubmitted = true;
+    setRunStatus("Syncing run telemetry...", "pending");
     void submitFinalScore(state);
   }
+}
+
+function buildGameOverSubtitle(gameState, extraNote = "") {
+  const base = `Score: ${gameState.score} - Best: ${gameState.best}`;
+
+  if (extraNote === "") {
+    return base;
+  }
+
+  return `${base}<br>${extraNote}`;
 }
 
 async function submitFinalScore(gameState) {
   if (!gameState) return;
 
   try {
-    const result = await submitHighScore({
-      score: gameState.score,
-      duration_seconds: Math.floor(gameState.elapsedTime / 1000),
+    const settings = getSettings();
+    const result = await submitGameRun({
+      theme: settings.theme,
+      board_size: settings.boardSize,
       grid_size: gameState.grid,
-      speed: gameState.speed,
-      apples: gameState.applesOnBoard,
-      walls: gameState.walls,
+      speed_level: gameState.speed,
+      apple_type: "standard",
+      apple_count: gameState.applesOnBoard,
+      walls_enabled: gameState.walls,
+      snake_style: settings.snakeStyle || "tube",
+      score: gameState.score,
+      length: gameState.snake.length,
+      duration_seconds: Math.floor(gameState.elapsedTime / 1000),
     });
 
-    const submittedBest = Number(result?.data?.submission?.best_score ?? 0);
+    const submittedBest = Number(result?.data?.personal_best_score ?? 0);
     if (submittedBest > 0) {
       const nextBest = setBest(submittedBest);
 
       if (state === gameState) {
         state.best = nextBest;
         updateHUD();
-        updateOverlay("Game Over", `Score: ${state.score} - Best: ${state.best}`);
+        updateOverlay(
+          "Game Over",
+          buildGameOverSubtitle(
+            state,
+            '<span class="overlay-note overlay-note--success">Run saved to your profile.</span>'
+          )
+        );
         setOverlayVisibility(true);
       }
     }
+
+    if (state === gameState) {
+      setRunStatus("Run saved to your profile.", "success");
+    }
   } catch (error) {
-    console.warn("High score submission failed:", error);
+    const errorCode = error?.payload?.error?.code || "";
+    const isAuthError = errorCode === "authentication_required";
+    const statusMessage = isAuthError
+      ? "Sign in to save runs, scores, and recent history."
+      : "Run telemetry could not be saved right now.";
+    const overlayNoteClass = isAuthError
+      ? "overlay-note overlay-note--warning"
+      : "overlay-note overlay-note--error";
+    const tone = isAuthError ? "warning" : "error";
+
+    if (state === gameState) {
+      updateOverlay(
+        "Game Over",
+        buildGameOverSubtitle(
+          state,
+          `<span class="${overlayNoteClass}">${statusMessage}</span>`
+        )
+      );
+      setOverlayVisibility(true);
+    }
+
+    if (state === gameState) {
+      setRunStatus(statusMessage, tone);
+    }
+    console.warn("Run telemetry failed:", error);
   }
 }
 

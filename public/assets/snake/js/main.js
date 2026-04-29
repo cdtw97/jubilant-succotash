@@ -7,7 +7,11 @@ export * from "./game.js";
 export * from "./ui.js";
 
 // ----- Imports -----
-import { initEventListeners, syncUiToSettings, updateHUD } from "./ui.js";
+import {
+  initEventListeners,
+  syncUiToSettings,
+  updateHUD,
+} from "./ui.js";
 import { resetGame } from "./game.js";
 
 // ----- Updates -----
@@ -42,7 +46,7 @@ navigator.serviceWorker?.addEventListener("controllerchange", () => {
 
 // ----- Settings & Storage -----
 let settings = {};
-let bestScore = 0;
+let bestScore = Number(document.body?.dataset.initialBestScore || 0);
 const THEME_ALIASES = {
   classic: "living-forest",
   dark: "terminal",
@@ -60,7 +64,11 @@ const AVAILABLE_THEMES = new Set([
 const runtimeConfig = {
   audioBaseUrl: document.body?.dataset.audioBaseUrl || "",
   csrfToken: document.body?.dataset.csrfToken || "",
-  scoreEndpoint: document.body?.dataset.scoreEndpoint || "",
+  telemetryEndpoint: document.body?.dataset.telemetryEndpoint || "",
+  authenticated: document.body?.dataset.authenticated === "1",
+  loginUrl: document.body?.dataset.loginUrl || "",
+  profileUrl: document.body?.dataset.profileUrl || "",
+  initialBestScore: Number(document.body?.dataset.initialBestScore || 0),
   serviceWorkerUrl: document.body?.dataset.serviceWorkerUrl || "",
 };
 
@@ -162,37 +170,33 @@ export function setBest(v) {
   return bestScore;
 }
 
-export async function submitHighScore(payload) {
-  if (runtimeConfig.scoreEndpoint === "") {
+export async function submitGameRun(payload) {
+  if (runtimeConfig.telemetryEndpoint === "") {
     return null;
   }
 
-  const body = new URLSearchParams({
-    _token: runtimeConfig.csrfToken,
-    score: String(payload.score ?? 0),
-    duration_seconds: String(payload.duration_seconds ?? 0),
-    grid_size: String(payload.grid_size ?? 0),
-    speed: String(payload.speed ?? 0),
-    apples: String(payload.apples ?? 0),
-    walls: payload.walls ? "1" : "0",
-  });
-
-  const response = await fetch(runtimeConfig.scoreEndpoint, {
+  const response = await fetch(runtimeConfig.telemetryEndpoint, {
     method: "POST",
     credentials: "same-origin",
     headers: {
       Accept: "application/json",
+      "Content-Type": "application/json; charset=utf-8",
+      "X-CSRF-Token": runtimeConfig.csrfToken,
     },
-    body,
+    body: JSON.stringify(payload),
   });
 
-  const result = await response.json();
+  const result = await response
+    .json()
+    .catch(() => ({ error: { message: "Run telemetry failed." } }));
 
   if (!response.ok) {
-    throw new Error(result?.error?.message || "High score submission failed.");
+    const error = new Error(result?.error?.message || "Run telemetry failed.");
+    error.payload = result;
+    throw error;
   }
 
-  const submittedBest = Number(result?.data?.submission?.best_score ?? 0);
+  const submittedBest = Number(result?.data?.personal_best_score ?? 0);
   if (submittedBest > 0) {
     setBest(submittedBest);
   }
@@ -207,7 +211,9 @@ export function applyTheme(name) {
 // ----- Initialization -----
 function init() {
   settings = loadSettings();
-  bestScore = 0;
+  bestScore = Number.isFinite(runtimeConfig.initialBestScore)
+    ? runtimeConfig.initialBestScore
+    : 0;
   resetGame();
   initEventListeners();
   syncUiToSettings();

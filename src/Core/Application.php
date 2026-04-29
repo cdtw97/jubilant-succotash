@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace MyFrancis\Core;
 
+use App\Middleware\AuthenticateUserMiddleware;
+use App\Middleware\RedirectIfAuthenticatedMiddleware;
+use App\Middleware\ResolveAuthStateMiddleware;
+use App\Middleware\WebJsonInputMiddleware;
 use MyFrancis\Config\AppConfig;
 use MyFrancis\Config\DatabaseConfig;
 use MyFrancis\Core\Exceptions\ConfigurationException;
@@ -195,6 +199,10 @@ final class Application
         $this->router->aliasMiddleware('csrf', CsrfMiddleware::class);
         $this->router->aliasMiddleware('json.body', JsonBodyMiddleware::class);
         $this->router->aliasMiddleware('internal.auth', InternalApiAuthMiddleware::class);
+        $this->router->aliasMiddleware('auth.state', ResolveAuthStateMiddleware::class);
+        $this->router->aliasMiddleware('auth', AuthenticateUserMiddleware::class);
+        $this->router->aliasMiddleware('guest', RedirectIfAuthenticatedMiddleware::class);
+        $this->router->aliasMiddleware('web.json', WebJsonInputMiddleware::class);
     }
 
     private function finalizeResponse(Request $request, Response $response): Response

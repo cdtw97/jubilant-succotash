@@ -7,6 +7,7 @@ use MyFrancis\Core\Application;
 use MyFrancis\Core\Container;
 use MyFrancis\Security\CsrfTokenManager;
 use MyFrancis\Security\Escaper;
+use MyFrancis\Security\SessionManager;
 use MyFrancis\Support\Env;
 
 if (! function_exists('e')) {
@@ -104,6 +105,36 @@ if (! function_exists('application_csrf_manager')) {
         }
 
         return $application->container()->get(CsrfTokenManager::class);
+    }
+}
+
+if (! function_exists('application_service')) {
+    function application_service(string $serviceId): mixed
+    {
+        $application = Application::getInstance();
+
+        if (! $application instanceof Application) {
+            return null;
+        }
+
+        $container = $application->container();
+
+        if (! $container->has($serviceId)) {
+            return null;
+        }
+
+        return $container->get($serviceId);
+    }
+}
+
+if (! function_exists('session_flash')) {
+    function session_flash(string $key, mixed $default = null): mixed
+    {
+        $sessionManager = application_service(SessionManager::class);
+
+        return $sessionManager instanceof SessionManager
+            ? $sessionManager->getFlash($key, $default)
+            : $default;
     }
 }
 

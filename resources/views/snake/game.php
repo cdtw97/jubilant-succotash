@@ -14,19 +14,36 @@ $scripts = [
 $bodyAttributes = [
     'data-audio-base-url' => (string) ($audioBaseUrl ?? ''),
     'data-csrf-token' => (string) ($csrfToken ?? ''),
-    'data-score-endpoint' => (string) ($scoreSubmissionUrl ?? ''),
+    'data-telemetry-endpoint' => (string) ($telemetrySubmissionUrl ?? ''),
+    'data-authenticated' => !empty($isAuthenticated) ? '1' : '0',
+    'data-login-url' => (string) ($loginUrl ?? ''),
+    'data-profile-url' => (string) ($profileUrl ?? ''),
+    'data-initial-best-score' => (string) ($initialBestScore ?? 0),
     'data-theme' => 'living-forest',
 ];
 
 ob_start();
 ?>
-<main class="page-shell snake-shell">
+<main class="page-shell snake-shell container-xxl px-0">
     <section class="snake-stage">
         <div class="snake-stage__frame">
             <div class="wrap">
                 <div class="game-card">
                     <div class="hud-2">
-                        <h1 class="game-title">Snake Game</h1>
+                        <div class="hud-heading">
+                            <h1 class="game-title">Snake Game</h1>
+                            <div class="player-status">
+                                <?php if (!empty($isAuthenticated) && is_array($authUser ?? null)): ?>
+                                    <a class="player-status__pill player-status__pill--live" href="<?= e((string) ($profileUrl ?? '')) ?>">
+                                        Logged In: <?= e((string) (($authUser ?? [])['username'] ?? 'Player')) ?>
+                                    </a>
+                                <?php else: ?>
+                                    <a class="player-status__pill player-status__pill--guest" href="<?= e((string) ($loginUrl ?? '')) ?>">
+                                        Guest Mode: Sign in to save runs
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                         <div class="hud-tools">
                             <div class="hud-stats">
                                 <div class="badge">Score: <span id="score">0</span></div>
@@ -52,6 +69,14 @@ ob_start();
                                 </svg>
                                 <span class="hud-icon-btn__label" id="fullscreenLabel">Fullscreen</span>
                             </button>
+                        </div>
+                        <div class="hud-status-row">
+                            <div
+                                class="run-status run-status--<?= !empty($isAuthenticated) ? 'live' : 'warning' ?>"
+                                data-default-message="<?= e((string) ($telemetryStatusText ?? '')) ?>"
+                                data-default-tone="<?= !empty($isAuthenticated) ? 'live' : 'warning' ?>"
+                                id="runStatus"
+                            ><?= e((string) ($telemetryStatusText ?? '')) ?></div>
                         </div>
                     </div>
                     <div class="canvas-wrap">

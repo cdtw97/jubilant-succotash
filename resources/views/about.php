@@ -7,7 +7,7 @@ $pageClass = 'about-page';
 
 ob_start();
 ?>
-<main class="page-shell">
+<main class="page-shell container-xxl px-0">
     <section class="hero-card hero-card--white">
         <div class="page-kicker">About</div>
         <h1 class="page-title"><?= e($heading ?? 'About MyFrancis') ?></h1>

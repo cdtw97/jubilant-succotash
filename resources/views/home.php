@@ -7,7 +7,7 @@ $pageClass = 'home-page funnel-home';
 
 ob_start();
 ?>
-<main class="page-shell funnel-shell">
+<main class="page-shell funnel-shell container-xxl px-0">
     <section class="hero-card hero-card--grass funnel-hero">
         <div class="funnel-hero__content">
             <div class="page-kicker">Precision Engineered Arcade Rush</div>

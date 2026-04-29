@@ -173,11 +173,47 @@ canvas {
   color: var(--hud-text);
 }
 
+.hud-heading {
+  display: grid;
+  gap: 8px;
+}
+
 .game-title {
   margin: 0;
   font-size: clamp(1.35rem, 2vw, 1.85rem);
   font-weight: 800;
   letter-spacing: -0.04em;
+}
+
+.player-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.player-status__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  border: 2px solid transparent;
+}
+
+.player-status__pill--live {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.player-status__pill--guest {
+  color: var(--hud-text);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .hud-tools {
@@ -251,6 +287,43 @@ canvas {
   white-space: nowrap;
 }
 
+.hud-status-row {
+  width: 100%;
+}
+
+.run-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  color: var(--hud-text);
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  line-height: 1.45;
+}
+
+.run-status--live,
+.run-status--success {
+  background: rgba(78, 201, 133, 0.18);
+  border-color: rgba(78, 201, 133, 0.2);
+}
+
+.run-status--warning {
+  background: rgba(246, 196, 69, 0.18);
+  border-color: rgba(246, 196, 69, 0.22);
+}
+
+.run-status--error {
+  background: rgba(239, 111, 99, 0.18);
+  border-color: rgba(239, 111, 99, 0.22);
+}
+
+.run-status--pending {
+  background: rgba(79, 141, 246, 0.18);
+  border-color: rgba(79, 141, 246, 0.22);
+}
+
 .overlay {
   position: absolute;
   inset: clamp(10px, 1.5vw, 14px);
@@ -281,6 +354,24 @@ canvas {
 .subtitle {
   max-width: 34rem;
   color: var(--muted);
+}
+
+.overlay-note {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 700;
+}
+
+.overlay-note--success {
+  color: color-mix(in srgb, var(--accent) 65%, #ffffff);
+}
+
+.overlay-note--warning {
+  color: color-mix(in srgb, #f6c445 72%, #3d2f08);
+}
+
+.overlay-note--error {
+  color: color-mix(in srgb, var(--danger) 82%, #5b120d);
 }
 
 .overlay-launch,
@@ -571,11 +662,115 @@ body.snake-page[data-theme="cyber-grid"] .sidebar {
     0 0 0 1px rgba(42, 246, 255, 0.14);
 }
 
+body.snake-page[data-theme="cyber-grid"] .canvas-wrap,
+body.snake-page[data-theme="cyber-grid"] .snake-stage__frame:fullscreen,
+body.snake-page[data-theme="cyber-grid"] .snake-stage__frame:-webkit-full-screen {
+  background-color: #060b17;
+  background-image:
+    linear-gradient(rgba(6, 11, 23, 0.52), rgba(6, 11, 23, 0.52)),
+    linear-gradient(rgba(0, 255, 255, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: auto, 22px 22px, 22px 22px;
+  background-position: center center;
+}
+
+body.snake-page[data-theme="cyber-grid"] canvas {
+  background: #040914;
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 255, 255, 0.2),
+    0 0 0 1px rgba(0, 217, 255, 0.08);
+}
+
 body.snake-page[data-theme="cyber-grid"] .button,
 body.snake-page[data-theme="cyber-grid"] #applyBtn {
   box-shadow:
     inset 0 -4px 0 rgba(0, 0, 0, 0.16),
     0 0 18px rgba(42, 246, 255, 0.18);
+}
+
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #theme,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #snakeStyle,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #grid,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #speed,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #apples,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #walls {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: rgba(6, 11, 27, 0.92);
+  background-image:
+    linear-gradient(180deg, rgba(25, 17, 52, 0.96), rgba(7, 12, 28, 0.96)),
+    linear-gradient(45deg, transparent 50%, #f7fbff 50%),
+    linear-gradient(135deg, #f7fbff 50%, transparent 50%);
+  background-repeat: no-repeat;
+  background-size: auto, 9px 9px, 9px 9px;
+  background-position: 0 0, calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+  color: #f7fbff;
+  -webkit-text-fill-color: #f7fbff;
+  color-scheme: dark;
+  border-color: rgba(0, 217, 255, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 61, 200, 0.1);
+  padding-right: 36px;
+}
+
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #theme option,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #snakeStyle option,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #grid option,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #speed option,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #apples option,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #walls option {
+  background: #070c1d;
+  color: #f7fbff;
+}
+
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #master-volume,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #sfx-volume {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  accent-color: #00ffff;
+}
+
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #master-volume::-webkit-slider-runnable-track,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #sfx-volume::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 61, 200, 0.36), rgba(0, 255, 255, 0.34));
+  border: 1px solid rgba(0, 217, 255, 0.24);
+}
+
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #master-volume::-webkit-slider-thumb,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #sfx-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: #00ffff;
+  border: 2px solid #05101a;
+  box-shadow:
+    0 0 0 2px rgba(0, 217, 255, 0.2),
+    0 0 12px rgba(0, 255, 255, 0.56);
+}
+
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #master-volume::-moz-range-track,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #sfx-volume::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 61, 200, 0.36), rgba(0, 255, 255, 0.34));
+  border: 1px solid rgba(0, 217, 255, 0.24);
+}
+
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #master-volume::-moz-range-thumb,
+body.snake-page[data-theme="cyber-grid"] .settings-panel .sidebar #sfx-volume::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00ffff;
+  border: 2px solid #05101a;
+  box-shadow:
+    0 0 0 2px rgba(0, 217, 255, 0.2),
+    0 0 12px rgba(0, 255, 255, 0.56);
 }
 
 body.snake-page[data-theme="e-ink"] .game-card,
@@ -591,6 +786,10 @@ body.snake-page[data-theme="e-ink"] .tab-btn.active {
   background: linear-gradient(180deg, #71746f, #555854);
 }
 
+body.snake-page[data-theme="e-ink"] .overlay #overlaySettingsBtn {
+  color: #f4f0e8;
+}
+
 body.snake-page[data-theme="classic-handheld"] .game-card,
 body.snake-page[data-theme="classic-handheld"] .sidebar,
 body.snake-page[data-theme="classic-handheld"] .update-card {
@@ -603,6 +802,10 @@ body.snake-page[data-theme="classic-handheld"] .tab-btn.active,
 body.snake-page[data-theme="classic-handheld"] .button,
 body.snake-page[data-theme="classic-handheld"] #applyBtn {
   color: #f4ffd7;
+}
+
+body.snake-page[data-theme="classic-handheld"] .overlay #overlaySettingsBtn {
+  color: #0f380f;
 }
 
 body.snake-page[data-theme="terminal"] .hud-2,
@@ -630,6 +833,41 @@ body.snake-page[data-theme="terminal"] #applyBtn {
   background: linear-gradient(180deg, #0e190e, #050905);
 }
 
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #theme,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #snakeStyle,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #grid,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #speed,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #apples,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #walls {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #000000;
+  background-image:
+    linear-gradient(180deg, #000000, #000000),
+    linear-gradient(45deg, transparent 50%, #9efda8 50%),
+    linear-gradient(135deg, #9efda8 50%, transparent 50%);
+  background-repeat: no-repeat;
+  background-size: auto, 9px 9px, 9px 9px;
+  background-position: 0 0, calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+  color: #9efda8;
+  -webkit-text-fill-color: #9efda8;
+  color-scheme: dark;
+  border-color: rgba(0, 255, 65, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(0, 255, 65, 0.08);
+  padding-right: 36px;
+}
+
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #theme option,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #snakeStyle option,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #grid option,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #speed option,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #apples option,
+body.snake-page[data-theme="terminal"] .settings-panel .sidebar #walls option {
+  background: #000000;
+  color: #9efda8;
+}
+
 .loader {
   width: 24px;
   height: 24px;
@@ -653,6 +891,11 @@ body.snake-page[data-theme="terminal"] #applyBtn {
   .hud-2 {
     justify-content: center;
     text-align: center;
+  }
+
+  .hud-heading,
+  .hud-status-row {
+    justify-items: center;
   }
 
   .hud-tools {
@@ -679,6 +922,11 @@ body.snake-page[data-theme="terminal"] #applyBtn {
 
   .game-title {
     width: 100%;
+  }
+
+  .player-status,
+  .run-status {
+    justify-content: center;
   }
 }
 
