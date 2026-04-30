@@ -27,32 +27,61 @@ ob_start();
 <main class="page-shell snake-shell container-xxl px-0">
     <section class="snake-stage">
         <div class="snake-stage__frame">
+            <div aria-label="Game notifications" class="notification-rail" id="notificationRail">
+                <div class="notification-card notification-card--player" id="playerStatusNotice">
+                    <div class="notification-card__header">
+                        <span class="notification-card__eyebrow">Player status</span>
+                        <button
+                            aria-controls="playerStatusNotice"
+                            aria-label="Dismiss player status"
+                            class="notification-card__dismiss"
+                            data-dismiss-target="playerStatusNotice"
+                            type="button"
+                        >
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="player-status">
+                        <?php if (!empty($isAuthenticated) && is_array($authUser ?? null)): ?>
+                            <a class="player-status__pill player-status__pill--live" href="<?= e((string) ($profileUrl ?? '')) ?>">
+                                Logged In: <?= e((string) (($authUser ?? [])['username'] ?? 'Player')) ?>
+                            </a>
+                        <?php else: ?>
+                            <a class="player-status__pill player-status__pill--guest" href="<?= e((string) ($loginUrl ?? '')) ?>">
+                                Guest Mode: Sign in to save runs
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="notification-card notification-card--run" id="runStatusNotice">
+                    <div class="notification-card__header">
+                        <span class="notification-card__eyebrow">Live run updates</span>
+                        <button
+                            aria-controls="runStatusNotice"
+                            aria-label="Dismiss run status"
+                            class="notification-card__dismiss"
+                            data-dismiss-target="runStatusNotice"
+                            type="button"
+                        >
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div
+                        aria-atomic="true"
+                        aria-live="polite"
+                        class="run-status run-status--<?= !empty($isAuthenticated) ? 'live' : 'warning' ?>"
+                        data-default-message="<?= e((string) ($telemetryStatusText ?? '')) ?>"
+                        data-default-tone="<?= !empty($isAuthenticated) ? 'live' : 'warning' ?>"
+                        id="runStatus"
+                        role="status"
+                    ><?= e((string) ($telemetryStatusText ?? '')) ?></div>
+                </div>
+            </div>
             <div class="wrap">
                 <div class="game-card">
                     <div class="hud-2">
-                        <div class="hud-heading">
+                        <div class="hud-topline">
                             <h1 class="game-title">Snake Game</h1>
-                            <div class="player-status">
-                                <?php if (!empty($isAuthenticated) && is_array($authUser ?? null)): ?>
-                                    <a class="player-status__pill player-status__pill--live" href="<?= e((string) ($profileUrl ?? '')) ?>">
-                                        Logged In: <?= e((string) (($authUser ?? [])['username'] ?? 'Player')) ?>
-                                    </a>
-                                <?php else: ?>
-                                    <a class="player-status__pill player-status__pill--guest" href="<?= e((string) ($loginUrl ?? '')) ?>">
-                                        Guest Mode: Sign in to save runs
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="hud-tools">
-                            <div class="hud-stats">
-                                <div class="badge">Score: <span id="score">0</span></div>
-                                <div class="badge">Best: <span id="best">0</span></div>
-                                <div class="badge" id="hudSpeed">
-                                    Speed: <span id="speedLabel">8</span>/s
-                                </div>
-                                <div class="badge">Time: <span id="time">0:00</span></div>
-                            </div>
                             <button
                                 aria-label="Enter fullscreen"
                                 class="hud-icon-btn"
@@ -70,13 +99,30 @@ ob_start();
                                 <span class="hud-icon-btn__label" id="fullscreenLabel">Fullscreen</span>
                             </button>
                         </div>
-                        <div class="hud-status-row">
-                            <div
-                                class="run-status run-status--<?= !empty($isAuthenticated) ? 'live' : 'warning' ?>"
-                                data-default-message="<?= e((string) ($telemetryStatusText ?? '')) ?>"
-                                data-default-tone="<?= !empty($isAuthenticated) ? 'live' : 'warning' ?>"
-                                id="runStatus"
-                            ><?= e((string) ($telemetryStatusText ?? '')) ?></div>
+                        <div class="hud-summary">
+                            <div aria-label="Game stats" class="hud-stats">
+                                <div class="badge badge--stat">
+                                    <span class="badge__label">Score</span>
+                                    <span class="badge__value" id="score">0</span>
+                                </div>
+                                <div class="badge badge--stat">
+                                    <span class="badge__label">Best</span>
+                                    <span class="badge__value" id="best">0</span>
+                                </div>
+                            </div>
+                            <div aria-label="Current settings" class="hud-settings">
+                                <span class="hud-settings__label">Current settings</span>
+                                <div class="hud-settings__items">
+                                    <div class="badge badge--setting" id="hudSpeed">
+                                        <span class="badge__label">Speed</span>
+                                        <span class="badge__value"><span id="speedLabel">8</span>/s</span>
+                                    </div>
+                                    <div class="badge badge--setting">
+                                        <span class="badge__label">Time</span>
+                                        <span class="badge__value" id="time">0:00</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="canvas-wrap">

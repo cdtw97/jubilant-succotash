@@ -37,15 +37,21 @@ const snakeStyleSel = $("#snakeStyle");
 const settingsPanel = $("#settings-panel");
 const backBtn = $("#backBtn");
 const wrapEl = $(".wrap");
+const pageShell = $(".snake-shell");
 const snakeStageFrame = $(".snake-stage__frame");
 const gameCard = $(".game-card");
 const hud = $(".hud-2");
+const scorebarShell = $(".scorebar-shell");
+const siteAlert = $(".site-alert");
 const boardSizeSel = $("#boardSize");
 const mobileControls = $("#mobileControls");
 const pauseBtn = document.querySelector("#pauseBtn");
 const fullscreenBtn = $("#fullscreenBtn");
 const fullscreenLabel = $("#fullscreenLabel");
 const fullscreenIconPath = $("#fullscreenIconPath");
+const notificationRail = $("#notificationRail");
+const playerStatusNotice = $("#playerStatusNotice");
+const runStatusNotice = $("#runStatusNotice");
 const settingsTabs = document.querySelectorAll(".tab-btn");
 const settingsContentPanels = document.querySelectorAll(".tab-content");
 const timeEl = $("#time");
@@ -162,11 +168,74 @@ function openSettingsPanel() {
   settingsPanel.classList.remove("hidden");
 }
 
+function showNotificationCard(card) {
+  if (!card) return;
+
+  card.hidden = false;
+  card.removeAttribute("hidden");
+  card.dataset.dismissed = "false";
+}
+
+function dismissNotificationCard(card) {
+  if (!card) return;
+
+  card.hidden = true;
+  card.dataset.dismissed = "true";
+}
+
+function bindNotificationDismissButtons() {
+  notificationRail
+    ?.querySelectorAll(".notification-card__dismiss")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const targetId = button.dataset.dismissTarget;
+        const card = targetId
+          ? document.getElementById(targetId)
+          : button.closest(".notification-card");
+
+        dismissNotificationCard(card);
+      });
+    });
+}
+
 const BOARD_SIZE_PRESETS = {
-  small: { factor: 0.68, max: 500 },
-  medium: { factor: 0.82, max: 680 },
-  large: { factor: 0.96, max: 860 },
+  small: { factor: 0.54, max: 540 },
+  medium: { factor: 0.74, max: 820 },
+  large: { factor: 0.9, max: 980 },
 };
+
+function getViewportHeight() {
+  return Math.floor(window.visualViewport?.height || window.innerHeight);
+}
+
+function getBlockSize(el) {
+  return el ? Math.ceil(el.getBoundingClientRect().height) : 0;
+}
+
+function getComputedNumber(el, property, fallback = 0) {
+  if (!el) return fallback;
+
+  const value = parseFloat(getComputedStyle(el)[property]);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function getNotificationReserve() {
+  if (!notificationRail) return 0;
+
+  const railHeight = getBlockSize(notificationRail);
+  if (railHeight <= 0) return 0;
+
+  const isFixed = getComputedStyle(notificationRail).position === "fixed";
+  const frameGap = isFixed
+    ? 0
+    : getComputedNumber(
+        snakeStageFrame,
+        "rowGap",
+        getComputedNumber(snakeStageFrame, "gap", 0)
+      );
+
+  return railHeight + frameGap;
+}
 
 function getBoardWidthForViewport(size) {
   const preset = BOARD_SIZE_PRESETS[size] || BOARD_SIZE_PRESETS.medium;
@@ -178,11 +247,22 @@ function getBoardWidthForViewport(size) {
     : 0;
   const availableWidth = Math.max(
     240,
-    (wrapEl?.clientWidth || window.innerWidth) -
+    (snakeStageFrame?.clientWidth || wrapEl?.clientWidth || window.innerWidth) -
       horizontalPadding -
       (isFullscreen ? (isMobile() ? 24 : 40) : 0)
   );
   const hudHeight = hud?.offsetHeight || 0;
+  const viewportHeight = getViewportHeight();
+  const shellMarginTop = isFullscreen
+    ? 0
+    : getComputedNumber(pageShell, "marginTop", 0);
+  const shellMarginBottom = isFullscreen
+    ? 0
+    : getComputedNumber(pageShell, "marginBottom", 0);
+  const topChromeHeight = isFullscreen
+    ? 0
+    : getBlockSize(scorebarShell) + getBlockSize(siteAlert);
+  const notificationReserve = isFullscreen ? 0 : getNotificationReserve();
   const controlsHeight =
     !isFullscreen && isMobile() && mobileControls
       ? mobileControls.offsetHeight + 20
@@ -196,7 +276,14 @@ function getBoardWidthForViewport(size) {
       : 48;
   const availableHeight = Math.max(
     240,
-    window.innerHeight - hudHeight - controlsHeight - verticalSafety
+    viewportHeight -
+      topChromeHeight -
+      shellMarginTop -
+      shellMarginBottom -
+      notificationReserve -
+      hudHeight -
+      controlsHeight -
+      verticalSafety
   );
 
   if (isFullscreen) {
@@ -209,7 +296,7 @@ function getBoardWidthForViewport(size) {
 
   const viewportTarget = Math.min(
     preset.max,
-    Math.round(Math.min(window.innerWidth, availableHeight) * preset.factor)
+    Math.round(availableWidth * preset.factor)
   );
   const minWidth = Math.min(320, availableWidth, availableHeight);
   return Math.max(
@@ -244,6 +331,8 @@ export function showReadyOverlay() {
 
 // ----- Event Listeners -----
 export function initEventListeners() {
+  bindNotificationDismissButtons();
+
   fullscreenBtn?.addEventListener("click", async () => {
     try {
       if (isGameFullscreen()) {
@@ -459,6 +548,7 @@ export function updateHUD() {
 export function setRunStatus(message, tone = "live") {
   if (!runStatusEl) return;
 
+  showNotificationCard(runStatusNotice);
   runStatusEl.textContent = message;
   runStatusEl.className = `run-status run-status--${tone}`;
 }
@@ -1015,6 +1105,7 @@ function applyBoardSize(size, redraw = true) {
   const boardWidth = getBoardWidthForViewport(effectiveSize);
 
   gameCard.setAttribute("data-size", effectiveSize);
+  gameCard.style.setProperty("--snake-board-width", `${boardWidth}px`);
   gameCard.style.width = `${boardWidth}px`;
   gameCard.style.maxWidth = "100%";
   resizeCanvas(redraw);
