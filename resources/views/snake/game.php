@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 $title = $title ?? 'Snake Game';
@@ -36,8 +37,7 @@ ob_start();
                             aria-label="Dismiss player status"
                             class="notification-card__dismiss"
                             data-dismiss-target="playerStatusNotice"
-                            type="button"
-                        >
+                            type="button">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -61,8 +61,7 @@ ob_start();
                             aria-label="Dismiss run status"
                             class="notification-card__dismiss"
                             data-dismiss-target="runStatusNotice"
-                            type="button"
-                        >
+                            type="button">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -73,28 +72,24 @@ ob_start();
                         data-default-message="<?= e((string) ($telemetryStatusText ?? '')) ?>"
                         data-default-tone="<?= !empty($isAuthenticated) ? 'live' : 'warning' ?>"
                         id="runStatus"
-                        role="status"
-                    ><?= e((string) ($telemetryStatusText ?? '')) ?></div>
+                        role="status"><?= e((string) ($telemetryStatusText ?? '')) ?></div>
                 </div>
             </div>
             <div class="wrap">
                 <div class="game-card">
                     <div class="hud-2">
                         <div class="hud-topline">
-                            <h1 class="game-title">Snake Game</h1>
                             <button
                                 aria-label="Enter fullscreen"
                                 class="hud-icon-btn"
                                 id="fullscreenBtn"
                                 title="Enter fullscreen"
-                                type="button"
-                            >
+                                type="button">
                                 <svg aria-hidden="true" class="hud-icon-btn__icon" viewBox="0 0 24 24">
                                     <path
                                         id="fullscreenIconPath"
                                         d="M5 5h5v2H7v3H5V5Zm9 0h5v5h-2V7h-3V5ZM5 14h2v3h3v2H5v-5Zm12 0h2v5h-5v-2h3v-3Z"
-                                        fill="currentColor"
-                                    />
+                                        fill="currentColor" />
                                 </svg>
                                 <span class="hud-icon-btn__label" id="fullscreenLabel">Fullscreen</span>
                             </button>
@@ -111,7 +106,7 @@ ob_start();
                                 </div>
                             </div>
                             <div aria-label="Current settings" class="hud-settings">
-                                <span class="hud-settings__label">Current settings</span>
+
                                 <div class="hud-settings__items">
                                     <div class="badge badge--setting" id="hudSpeed">
                                         <span class="badge__label">Speed</span>
@@ -245,8 +240,7 @@ ob_start();
                                         min="0"
                                         step="0.05"
                                         type="range"
-                                        value="0.4"
-                                    >
+                                        value="0.4">
                                 </div>
                                 <div class="control">
                                     <label for="sfx-volume">Snake Movement</label>
@@ -256,8 +250,7 @@ ob_start();
                                         min="0"
                                         step="0.05"
                                         type="range"
-                                        value="1.0"
-                                    >
+                                        value="1.0">
                                 </div>
                             </div>
                         </div>
@@ -283,8 +276,7 @@ ob_start();
                 aria-live="polite"
                 class="update-overlay hidden"
                 id="updateOverlay"
-                role="status"
-            >
+                role="status">
                 <div class="update-card">
                     <div aria-hidden="true" class="loader"></div>
                     <div id="updateOverlayText">Update available, fetching update...</div>

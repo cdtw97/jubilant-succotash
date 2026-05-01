@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use MyFrancis\Core\Application;
@@ -68,6 +69,7 @@ $navLinks = [
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -82,7 +84,8 @@ $navLinks = [
     <?php endforeach; ?>
     <title><?= e($pageTitle) ?></title>
 </head>
-<body class="<?= e($bodyClass) ?>"<?= $bodyAttributeString ?>>
+
+<body class="<?= e($bodyClass) ?>" <?= $bodyAttributeString ?>>
     <div class="site-board" aria-hidden="true">
         <?php for ($index = 0; $index < 840; $index++): ?>
             <span class="site-board__cell"></span>
@@ -96,12 +99,12 @@ $navLinks = [
                     <a class="scorebar-brand navbar-brand" href="<?= e(route('pages.home')) ?>">
                         <span class="scorebar-brand__icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24">
-                                <path d="M7.5 6.2c3.7-1.7 8.2-.1 10 3.6.4.8-.1 1.8-1 1.9l-4 .4-2.4 2.6a1 1 0 0 1-1.4 0L6 11.5A3.5 3.5 0 0 1 7.5 6.2Zm7.8 6.6a1.1 1.1 0 1 0 1.1 1.1 1.1 1.1 0 0 0-1.1-1.1Z" fill="currentColor"/>
+                                <path d="M7.5 6.2c3.7-1.7 8.2-.1 10 3.6.4.8-.1 1.8-1 1.9l-4 .4-2.4 2.6a1 1 0 0 1-1.4 0L6 11.5A3.5 3.5 0 0 1 7.5 6.2Zm7.8 6.6a1.1 1.1 0 1 0 1.1 1.1 1.1 1.1 0 0 0-1.1-1.1Z" fill="currentColor" />
                             </svg>
                         </span>
                         <span class="scorebar-brand__text">
                             <strong><?= e($app->name) ?></strong>
-                            <small>Google Snake UI</small>
+                            <small>Play snake online</small>
                         </span>
                     </a>
 
@@ -112,8 +115,7 @@ $navLinks = [
                         class="navbar-toggler scorebar-toggler"
                         data-bs-target="#primaryNavigation"
                         data-bs-toggle="collapse"
-                        type="button"
-                    >
+                        type="button">
                         <span class="scorebar-toggler__line"></span>
                         <span class="scorebar-toggler__line"></span>
                         <span class="scorebar-toggler__line"></span>
@@ -129,8 +131,7 @@ $navLinks = [
                                 <a
                                     class="<?= e($linkClass) ?>"
                                     href="<?= e($link['url']) ?>"
-                                    <?= $isActive ? ' aria-current="page"' : '' ?>
-                                >
+                                    <?= $isActive ? ' aria-current="page"' : '' ?>>
                                     <span class="scorebar-link__icon"><?= $link['icon'] ?></span>
                                     <span><?= e($link['label']) ?></span>
                                 </a>
@@ -185,4 +186,5 @@ $navLinks = [
         <?php endif; ?>
     <?php endforeach; ?>
 </body>
+
 </html>

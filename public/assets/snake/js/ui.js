@@ -58,6 +58,8 @@ const timeEl = $("#time");
 const runStatusEl = $("#runStatus");
 const readyOverlayMarkup = overlay.innerHTML;
 let timerInterval = null;
+const notificationTimers = new WeakMap();
+const NOTIFICATION_AUTO_DISMISS_MS = 5000;
 
 canvas.focus({ preventScroll: true });
 export let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -171,16 +173,38 @@ function openSettingsPanel() {
 function showNotificationCard(card) {
   if (!card) return;
 
+  clearNotificationDismissTimer(card);
   card.hidden = false;
   card.removeAttribute("hidden");
   card.dataset.dismissed = "false";
+  armNotificationAutoDismiss(card);
 }
 
 function dismissNotificationCard(card) {
   if (!card) return;
 
+  clearNotificationDismissTimer(card);
   card.hidden = true;
   card.dataset.dismissed = "true";
+}
+
+function clearNotificationDismissTimer(card) {
+  const timerId = notificationTimers.get(card);
+  if (!timerId) return;
+
+  window.clearTimeout(timerId);
+  notificationTimers.delete(card);
+}
+
+function armNotificationAutoDismiss(card) {
+  if (!card || card.hidden) return;
+
+  clearNotificationDismissTimer(card);
+  const timerId = window.setTimeout(() => {
+    dismissNotificationCard(card);
+  }, NOTIFICATION_AUTO_DISMISS_MS);
+
+  notificationTimers.set(card, timerId);
 }
 
 function bindNotificationDismissButtons() {
@@ -225,14 +249,15 @@ function getNotificationReserve() {
   const railHeight = getBlockSize(notificationRail);
   if (railHeight <= 0) return 0;
 
-  const isFixed = getComputedStyle(notificationRail).position === "fixed";
-  const frameGap = isFixed
-    ? 0
-    : getComputedNumber(
-        snakeStageFrame,
-        "rowGap",
-        getComputedNumber(snakeStageFrame, "gap", 0)
-      );
+  const position = getComputedStyle(notificationRail).position;
+  const isFloating = position === "absolute" || position === "fixed";
+  if (isFloating) return 0;
+
+  const frameGap = getComputedNumber(
+    snakeStageFrame,
+    "rowGap",
+    getComputedNumber(snakeStageFrame, "gap", 0)
+  );
 
   return railHeight + frameGap;
 }
@@ -332,6 +357,8 @@ export function showReadyOverlay() {
 // ----- Event Listeners -----
 export function initEventListeners() {
   bindNotificationDismissButtons();
+  armNotificationAutoDismiss(playerStatusNotice);
+  armNotificationAutoDismiss(runStatusNotice);
 
   fullscreenBtn?.addEventListener("click", async () => {
     try {
