@@ -223,9 +223,9 @@ function bindNotificationDismissButtons() {
 }
 
 const BOARD_SIZE_PRESETS = {
-  small: { factor: 0.54, max: 540 },
-  medium: { factor: 0.74, max: 820 },
-  large: { factor: 0.9, max: 980 },
+  small: { factor: 0.82, max: 760 },
+  medium: { factor: 0.96, max: 1120 },
+  large: { factor: 1, max: 1400 },
 };
 
 function getViewportHeight() {
@@ -276,6 +276,11 @@ function getBoardWidthForViewport(size) {
       horizontalPadding -
       (isFullscreen ? (isMobile() ? 24 : 40) : 0)
   );
+
+  if (!isFullscreen) {
+    return Math.floor(availableWidth);
+  }
+
   const hudHeight = hud?.offsetHeight || 0;
   const viewportHeight = getViewportHeight();
   const shellMarginTop = isFullscreen
@@ -310,14 +315,6 @@ function getBoardWidthForViewport(size) {
       controlsHeight -
       verticalSafety
   );
-
-  if (isFullscreen) {
-    return Math.floor(Math.min(availableWidth, availableHeight));
-  }
-
-  if (isMobile()) {
-    return Math.floor(Math.min(availableWidth, availableHeight));
-  }
 
   const viewportTarget = Math.min(
     preset.max,
@@ -1133,7 +1130,7 @@ function applyBoardSize(size, redraw = true) {
 
   gameCard.setAttribute("data-size", effectiveSize);
   gameCard.style.setProperty("--snake-board-width", `${boardWidth}px`);
-  gameCard.style.width = `${boardWidth}px`;
+  gameCard.style.width = "100%";
   gameCard.style.maxWidth = "100%";
   resizeCanvas(redraw);
 }
